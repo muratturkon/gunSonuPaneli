@@ -83,7 +83,7 @@ textarea{min-height:80px;resize:vertical}
     <div class="icerik">
 
         <label>Ekip Kodu</label>
-        <input id="ekip" placeholder="Ekip kodunu giriniz">
+        <input id="ekip" placeholder="Ekip kodunu giriniz (Örn: 85177)">
 
         <label>GBT Sayısı</label>
         <input id="gbt" type="number">
@@ -110,7 +110,7 @@ textarea{min-height:80px;resize:vertical}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, set, get, onValue } from 
+import { getDatabase, ref, set, get } from 
 "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 /* Firebase */
@@ -140,11 +140,40 @@ function bugun(){
     return new Date().toISOString().split("T")[0];
 }
 
+/* 🚫 BOŞLUK ENGELLE */
+ekip.addEventListener("input", () => {
+    ekip.value = ekip.value.replace(/\s+/g, "");
+});
+
+/* ✅ EKİP KODU KURAL */
+function ekipGecerliMi(){
+    let v = ekip.value.trim();
+
+    if(!v){
+        alert("Ekip kodu boş olamaz!");
+        return false;
+    }
+
+    // sadece rakamlar
+    v = v.replace(/\D/g, "");
+
+    // 85 ile başlamıyorsa otomatik ekle
+    if(!v.startsWith("85")){
+        v = "85" + v;
+    }
+
+    ekip.value = v;
+    return true;
+}
+
+
+
 /* 🔹 Ekip kodu girilince eski veriyi getir */
 ekip.addEventListener("blur", async () => {
     if(!ekip.value.trim()) return;
+    if(!ekipGecerliMi()) return;
 
-    const yol = ref(db, `gunSonuIcmal/${bugun()}/${ekip.value.trim()}`);
+    const yol = ref(db, `gunSonuIcmal/${bugun()}/${ekip.value}`);
     const snap = await get(yol);
 
     if(snap.exists()){
@@ -157,9 +186,10 @@ ekip.addEventListener("blur", async () => {
     }
 });
 
-/* 🔹 Kaydet (overwrite) */
+/* 🔹 Kaydet */
 document.getElementById("kaydet").onclick = async () => {
     if(!ekip.value.trim()) return;
+    if(!ekipGecerliMi()) return;
 
     const data = {
         gbt: Number(gbt.value||0),
@@ -171,7 +201,7 @@ document.getElementById("kaydet").onclick = async () => {
     };
 
     await set(
-        ref(db, `gunSonuIcmal/${bugun()}/${ekip.value.trim()}`),
+        ref(db, `gunSonuIcmal/${bugun()}/${ekip.value}`),
         data
     );
 
